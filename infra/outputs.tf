@@ -1,19 +1,19 @@
-output "ecr_repository_url" {
-  value       = aws_ecr_repository.app_repo.repository_url
-  description = "URI do repositório ECR criado para o microsserviço"
+output "lambda_function_arn" {
+  value       = aws_lambda_function.sqs_consumer.arn
+  description = "ARN da função Lambda."
 }
 
-output "ecs_cluster_name" {
-  value       = aws_ecs_cluster.main.name
-  description = "Nome do Cluster ECS criado"
+output "sqs_queue_url" {
+  value       = aws_sqs_queue.main_queue.id
+  description = "URL da fila SQS principal para envio de mensagens."
 }
 
-output "ecs_service_name" {
-  value       = aws_ecs_service.main.name
-  description = "Nome do Service ECS que o GitHub Actions atualiza a cada deploy"
+output "sqs_queue_arn" {
+  value       = aws_sqs_queue.main_queue.arn
+  description = "ARN da fila SQS principal."
 }
 
-output "ecs_security_group_id" {
-  description = "ID do Security Group associado às instâncias do ECS"
-  value       = aws_security_group.ecs_sg.id
+output "dlq_queue_url" {
+  value       = aws_sqs_queue.dlq.id
+  description = "URL da Dead Letter Queue (DLQ)."
 }
