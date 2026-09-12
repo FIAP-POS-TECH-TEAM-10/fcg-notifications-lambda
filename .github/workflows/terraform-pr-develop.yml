@@ -15,7 +15,7 @@ env:
   AWS_REGION: sa-east-1
   ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-ECS-Deploy-Role
   WORKING_DIR: ./infra
-  LAMBDA_PROJ_PATH: ./app/src/Fiap.FCGames.Notifications.Lambda # Ajuste para o caminho real do seu .csproj
+  LAMBDA_CSPROJ_PATH: ./src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj
 
 jobs:
   plan:
@@ -29,23 +29,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Build & Package Lambda (.NET 10 ARM64)
-        run: |
-          dotnet publish ${{ env.LAMBDA_PROJ_PATH }} \
-            -c Release \
-            -r linux-arm64 \
-            --self-contained true \
-            -o ./publish
-          
-          cd ./publish
-          zip -r ../publish/bootstrap.zip .
-        working-directory: ./ # Executa a compilação na raiz do repositório
-
+      # 1. Autenticação AWS em primeiro lugar (igual ao workflow que funciona)
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -53,6 +37,25 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
+      # 2. Setup e Build do .NET para gerar o zip que o Terraform precisa
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build & Package Lambda (.NET 10 ARM64)
+        run: |
+          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
+            -c Release \
+            -r linux-arm64 \
+            --self-contained true \
+            -o ./infra/publish
+          
+          cd ./infra/publish
+          zip -r ../bootstrap.zip .
+        working-directory: . # Força a execução na raiz do repositório
+
+      # 3. Steps do Terraform exatamente iguais ao workflow que funciona
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
