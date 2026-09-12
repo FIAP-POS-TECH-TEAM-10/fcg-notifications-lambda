@@ -19,7 +19,7 @@ env:
   ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-Lambda-Deploy-Role
   WORKING_DIR: ./infra
   LAMBDA_PROJ_PATH: ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj
-  
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -36,10 +36,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}          
+
       # Recompila o projeto para o runner do Deploy
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
+          dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
@@ -48,12 +54,6 @@ jobs:
           cd ./infra/publish
           zip -r ../bootstrap.zip .
         working-directory: . # Força a execução na raiz do repositório
-
-      - name: Configure AWS Credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
