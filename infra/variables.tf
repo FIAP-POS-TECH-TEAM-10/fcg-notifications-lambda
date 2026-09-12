@@ -1,20 +1,50 @@
-# --- VARIÁVEIS GLOBAIS ---
 variable "aws_region" {
-  type    = string
-  default = "sa-east-1"
+  type        = string
+  default     = "sa-east-1"
+  description = "Região da AWS."
 }
 
-variable "service_name" {
-  type    = string
-  default = "fcg-catalog-service"
+variable "project_name" {
+  type        = string
+  default     = "fiap-fcgames-notifications-lambda"
+  description = "Nome base para os recursos do projeto."
 }
 
-variable "app_port" {
-  type    = number
-  default = 5002 # Porta exposta do container Spring Boot/Node
+variable "sqs_name" {
+  type        = string
+  default     = "fiap-fcgames-sqs-notifications"
+  description = "Nome base para a fila."
 }
 
-variable "cluster_name" {
-  type    = string
-  default = "fcg-cluster-fiap"
+variable "environment" {
+  type        = string
+  default     = "Production"
+  description = "Ambiente de execução (Development, Production)."
+}
+
+variable "lambda_zip_path" {
+  type        = string
+  default     = "../publish/bootstrap.zip"
+  description = "Caminho relativo para o pacote ZIP compilado."
+}
+
+variable "lambda_memory_size" {
+  type        = number
+  default     = 512
+  description = "Memória alocada (MB)."
+}
+
+variable "lambda_timeout" {
+  type        = number
+  default     = 30
+  description = "Timeout máximo em segundos."
+}
+
+variable "tags" {
+  type        = map(string)
+  default = {
+    Project     = "FCGames"
+    Environment = "Production"
+    ManagedBy   = "Terraform"
+  }
 }
