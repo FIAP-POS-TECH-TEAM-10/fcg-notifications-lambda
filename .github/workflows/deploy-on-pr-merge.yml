@@ -31,10 +31,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # Recompila o projeto para o runner do Deploy
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda \
+          dotnet publish ./src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
@@ -42,7 +41,7 @@ jobs:
           
           cd ./publish
           zip -r ../publish/bootstrap.zip .
-        working-directory: ./
+        working-directory: . # FORÇA A EXECUÇÃO NA RAIZ DO REPOSITÓRIO
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
