@@ -39,15 +39,15 @@ jobs:
       # Recompila o projeto para o runner do Deploy
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ${{ env.LAMBDA_PROJ_PATH }} \
+          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
-            -o ./publish
+            -o ./infra/publish
           
-          cd ./publish
-          zip -r ../publish/bootstrap.zip .
-        working-directory: ./
+          cd ./infra/publish
+          zip -r ../bootstrap.zip .
+        working-directory: . # Força a execução na raiz do repositório
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
