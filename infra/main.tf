@@ -26,29 +26,24 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Permissões mínimas necessárias para consumir SQS
-resource "aws_iam_role_policy" "lambda_sqs_policy" {
-  name = "${var.project_name}-sqs-policy"
-  role = aws_iam_role.lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = aws_sqs_queue.main_queue.arn
-      }
-    ]
-  })
+# Permissões gerenciadas oficiais da AWS para consumo de SQS via Lambda
+resource "aws_iam_role_policy_attachment" "lambda_sqs_execution" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
 }
 
 # ------------------------------------------------------------------------------
-# 3. Função AWS Lambda (.NET 10 / Runtime AL2023)
+# 3. CloudWatch Log Group (Criado ANTES da Lambda para evitar conflito)
+# ------------------------------------------------------------------------------
+resource "aws_cloudwatch_log_group" "lambda_log_group" {
+  name              = "/aws/lambda/${var.project_name}"
+  retention_in_days = 5
+
+  tags = var.tags
+}
+
+# ------------------------------------------------------------------------------
+# 4. Função AWS Lambda (.NET 10 / Runtime AL2023)
 # ------------------------------------------------------------------------------
 resource "aws_lambda_function" "sqs_consumer" {
   filename         = var.lambda_zip_path
@@ -68,19 +63,17 @@ resource "aws_lambda_function" "sqs_consumer" {
     }
   }
 
-  tags = var.tags
-}
-
-# Log Group no CloudWatch com política de retenção definida
-resource "aws_cloudwatch_log_group" "lambda_log_group" {
-  name              = "/aws/lambda/${aws_lambda_function.sqs_consumer.function_name}"
-  retention_in_days = 5
+  # Garanta que o Log Group já exista antes de criar a Lambda
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_log_group,
+    aws_iam_role_policy_attachment.lambda_basic_execution
+  ]
 
   tags = var.tags
 }
 
 # ------------------------------------------------------------------------------
-# 4. Event Source Mapping (Acionamento automático da Lambda via SQS)
+# 5. Event Source Mapping (Acionamento automático da Lambda via SQS)
 # ------------------------------------------------------------------------------
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   event_source_arn = aws_sqs_queue.main_queue.arn
@@ -90,4 +83,10 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
 
   # Permite tratar falhas parciais do lote sem reprocessar todas as mensagens
   function_response_types = ["ReportBatchItemFailures"]
+
+  # CRÍTICO: Esperar as permissões do IAM e a Lambda estarem 100% ativas antes de mapear
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_sqs_execution,
+    aws_lambda_function.sqs_consumer
+  ]
 }
