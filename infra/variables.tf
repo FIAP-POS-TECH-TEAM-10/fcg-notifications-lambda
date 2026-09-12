@@ -45,6 +45,6 @@ variable "tags" {
 
 variable "lambda_zip_path" {
   type        = string
-  default     = "./bootstrap.zip"
+  default     = "./publish/bootstrap.zip"
   description = "Caminho do ZIP gerado dentro da pasta infra."
 }
