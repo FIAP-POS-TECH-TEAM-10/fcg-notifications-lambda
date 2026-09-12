@@ -22,12 +22,6 @@ variable "environment" {
   description = "Ambiente de execução (Development, Production)."
 }
 
-variable "lambda_zip_path" {
-  type        = string
-  default     = "../publish/bootstrap.zip"
-  description = "Caminho relativo para o pacote ZIP compilado."
-}
-
 variable "lambda_memory_size" {
   type        = number
   default     = 512
@@ -47,4 +41,10 @@ variable "tags" {
     Environment = "Production"
     ManagedBy   = "Terraform"
   }
+}
+
+variable "lambda_zip_path" {
+  type        = string
+  default     = "./bootstrap.zip"
+  description = "Caminho do ZIP gerado dentro da pasta infra."
 }
