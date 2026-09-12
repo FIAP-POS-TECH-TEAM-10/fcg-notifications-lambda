@@ -1,13 +1,18 @@
 name: Terraform Apply (Deploy Develop)
 
 on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
   push:
     branches:
-      - develop
+      - main
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Necessário para autenticação via OIDC na AWS
+  contents: read  # Permite checkout do código
+  packages: read  # Permite baixar pacotes privados do GitHub Packages
 
 env:
   AWS_REGION: sa-east-1
