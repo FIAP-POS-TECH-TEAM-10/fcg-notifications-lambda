@@ -1,0 +1,62 @@
+name: Terraform Apply (Deploy Develop)
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: sa-east-1
+  ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-ECS-Deploy-Role
+  WORKING_DIR: ./infra
+  LAMBDA_PROJ_PATH: ./app/src/Fiap.FCGames.Notifications.Lambda
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Recompila o projeto para o runner do Deploy
+      - name: Build & Package Lambda (.NET 10 ARM64)
+        run: |
+          dotnet publish ${{ env.LAMBDA_PROJ_PATH }} \
+            -c Release \
+            -r linux-arm64 \
+            --self-contained true \
+            -o ./publish
+          
+          cd ./publish
+          zip -r ../publish/bootstrap.zip .
+        working-directory: ./
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
