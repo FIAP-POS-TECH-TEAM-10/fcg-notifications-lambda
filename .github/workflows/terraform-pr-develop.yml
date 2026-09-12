@@ -13,9 +13,9 @@ permissions:
 
 env:
   AWS_REGION: sa-east-1
-  ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-ECS-Deploy-Role
+  ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-Lambda-Deploy-Role
   WORKING_DIR: ./infra
-  LAMBDA_PROJ_PATH: ./src/Fiap.FCGames.Notifications.Lambda # Ajuste para o caminho real do seu .csproj
+  LAMBDA_CSPROJ_PATH: ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj
 
 jobs:
   plan:
@@ -29,6 +29,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 1. Autenticação AWS em primeiro lugar 
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Debug OIDC ID Token Claims
+        run: |          
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          
+          echo "=== OIDC CLAIMS ==="          
+          echo "$TOKEN" | jq -R 'split(".") | .[1] | @base64d | fromjson'
+
+      # 2. Setup e Build do .NET para gerar o zip que o Terraform precisa
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -36,22 +52,17 @@ jobs:
 
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ${{ env.LAMBDA_PROJ_PATH }} \
+          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
-            -o ./publish
+            -o ./infra/publish
           
-          cd ./publish
-          zip -r ../publish/bootstrap.zip .
-        working-directory: ./ # Executa a compilação na raiz do repositório
+          cd ./infra/publish
+          zip -r ../bootstrap.zip .
+        working-directory: . # Força a execução na raiz do repositório
 
-      - name: Configure AWS Credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
-
+      # 3. Steps do Terraform exatamente iguais ao workflow que funciona
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

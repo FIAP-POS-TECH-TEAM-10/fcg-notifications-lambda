@@ -1,17 +1,22 @@
 name: Terraform Apply (Deploy Develop)
 
 on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
   push:
     branches:
-      - develop
+      - main
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Necessário para autenticação via OIDC na AWS
+  contents: read  # Permite checkout do código
+  packages: read  # Permite baixar pacotes privados do GitHub Packages
 
 env:
   AWS_REGION: sa-east-1
-  ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-ECS-Deploy-Role
+  ROLE_TO_ASSUME: arn:aws:iam::915153720516:role/GitHubActions-Lambda-Deploy-Role
   WORKING_DIR: ./infra
   LAMBDA_PROJ_PATH: ./app/src/Fiap.FCGames.Notifications.Lambda
 
@@ -59,5 +64,4 @@ jobs:
         run: terraform init
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
-        
+        run: terraform apply -auto-approve -input=false        
