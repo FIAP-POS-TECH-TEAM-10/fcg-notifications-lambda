@@ -34,7 +34,7 @@ jobs:
       # Recompila o projeto para o runner do Deploy
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ${{ env.LAMBDA_PROJ_PATH }} \
+          dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
