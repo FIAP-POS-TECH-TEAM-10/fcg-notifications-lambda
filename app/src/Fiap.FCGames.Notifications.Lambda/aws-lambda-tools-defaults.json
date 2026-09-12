@@ -1,0 +1,13 @@
+{
+  "Information": [
+    "Arquivo de configuração para o deployment e testes da AWS Lambda"
+  ],
+  "profile": "default",
+  "region": "sa-east-1",
+  "configuration": "Release",
+  "function-architecture": "arm64",
+  "function-runtime": "provided.al2023",
+  "function-memory-size": 512,
+  "function-timeout": 30,
+  "function-handler": "Fiap.FCGames.Notifications.Lambda::Fiap.FCGames.Notifications.Lambda.FunctionHandler::FunctionHandlerAsync"
+}
