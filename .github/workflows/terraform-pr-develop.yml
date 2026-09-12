@@ -29,22 +29,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Debug OIDC ID Token Claims
-        run: |
-          # Solicita o token OIDC interno do GitHub Actions
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
-          
-          echo "=== OIDC CLAIMS ==="
-          # Decodifica o cabeçalho e payload do JWT
-          echo "$TOKEN" | jq -R 'split(".") | .[1] | @base64d | fromjson'        
-
       # 1. Autenticação AWS em primeiro lugar 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Debug OIDC ID Token Claims
+        run: |          
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          
+          echo "=== OIDC CLAIMS ==="          
+          echo "$TOKEN" | jq -R 'split(".") | .[1] | @base64d | fromjson'
 
       # 2. Setup e Build do .NET para gerar o zip que o Terraform precisa
       - name: Setup .NET 10
