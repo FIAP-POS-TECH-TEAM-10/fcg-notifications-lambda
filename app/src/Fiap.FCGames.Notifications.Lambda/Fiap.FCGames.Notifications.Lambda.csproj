@@ -5,6 +5,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- Configurações essenciais para executável ARM64 no Amazon Linux 2023 -->
+    <RuntimeIdentifier>linux-arm64</RuntimeIdentifier>
+
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    
+    <!-- Opcional: Otimiza o tamanho do binário gerado -->
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
