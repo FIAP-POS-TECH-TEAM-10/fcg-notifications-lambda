@@ -1,10 +1,6 @@
 name: Terraform Apply (Deploy Develop)
 
 on:
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
