@@ -35,7 +35,6 @@ jobs:
         with:
           role-to-assume: ${{ env.ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
 
       # 2. Setup e Build do .NET para gerar o zip que o Terraform precisa
       - name: Setup .NET 10
@@ -90,4 +89,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-            
