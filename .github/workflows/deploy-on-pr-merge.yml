@@ -52,9 +52,8 @@ jobs:
           # Se o executável não se chamar bootstrap, renomeia/copia
           if [ -f "Fiap.FCGames.Notifications.Lambda" ]; then
             cp Fiap.FCGames.Notifications.Lambda bootstrap
-          fi
+          fi          
           
-          cd ./infra/publish
           chmod +x bootstrap
           zip -r ../bootstrap.zip .
         working-directory: .
