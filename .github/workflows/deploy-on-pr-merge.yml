@@ -38,18 +38,25 @@ jobs:
           role-to-assume: ${{ env.ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}          
 
-      # Recompila o projeto para o runner do Deploy
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj \
+          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
+            -p:PublishSingleFile=true \
             -o ./infra/publish
           
           cd ./infra/publish
+          
+          # Se o executável não se chamar bootstrap, renomeia/copia
+          if [ -f "Fiap.FCGames.Notifications.Lambda" ]; then
+            cp Fiap.FCGames.Notifications.Lambda bootstrap
+          fi
+          
+          chmod +x bootstrap
           zip -r ../bootstrap.zip .
-        working-directory: . # Força a execução na raiz do repositório
+        working-directory: .
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
