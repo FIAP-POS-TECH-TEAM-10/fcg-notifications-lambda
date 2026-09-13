@@ -54,6 +54,7 @@ jobs:
             cp Fiap.FCGames.Notifications.Lambda bootstrap
           fi
           
+          cd ./infra/publish
           chmod +x bootstrap
           zip -r ../bootstrap.zip .
         working-directory: .
