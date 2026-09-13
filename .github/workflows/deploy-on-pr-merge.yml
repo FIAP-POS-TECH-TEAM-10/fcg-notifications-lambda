@@ -40,7 +40,7 @@ jobs:
 
       - name: Build & Package Lambda (.NET 10 ARM64)
         run: |
-          dotnet publish ${{ env.LAMBDA_CSPROJ_PATH }} \
+          dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj \
             -c Release \
             -r linux-arm64 \
             --self-contained true \
