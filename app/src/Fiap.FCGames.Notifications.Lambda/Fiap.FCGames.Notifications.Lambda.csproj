@@ -15,6 +15,8 @@
     
     <!-- Opcional: Otimiza o tamanho do binário gerado -->
     <PublishTrimmed>false</PublishTrimmed>
+    <!-- ADICIONE ESTA LINHA: Evita crash por falta de dependências de cultura/locale no AL2023 -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>

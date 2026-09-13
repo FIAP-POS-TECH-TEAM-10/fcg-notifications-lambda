@@ -19,18 +19,27 @@ builder.Services.AddSingleton<FunctionHandler>();
 
 var host = builder.Build();
 var handler = host.Services.GetRequiredService<FunctionHandler>();
-var serializer = new DefaultLambdaJsonSerializer();
+//var serializer = new DefaultLambdaJsonSerializer();
 
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API")))
+try
 {
-    // Execução local para testes/debug
-    await host.RunAsync();
+    var serializer = new DefaultLambdaJsonSerializer();
+
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API")))
+    {
+        await host.RunAsync();
+    }
+    else
+    {
+        await LambdaBootstrapBuilder
+            .Create<SQSEvent>(handler.FunctionHandlerAsync, serializer)
+            .Build()
+            .RunAsync();
+    }
 }
-else
+catch (Exception ex)
 {
-    // Execução na AWS Lambda (Custom Runtime AL2023 ARM64)
-    await LambdaBootstrapBuilder
-        .Create<SQSEvent>(handler.FunctionHandlerAsync, serializer)
-        .Build()
-        .RunAsync();
+    Console.WriteLine($"CRASH NO STARTUP DA LAMBDA: {ex.Message}");
+    Console.WriteLine(ex.StackTrace);
+    throw;
 }
