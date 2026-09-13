@@ -21,16 +21,16 @@ var host = builder.Build();
 var handler = host.Services.GetRequiredService<FunctionHandler>();
 var serializer = new DefaultLambdaJsonSerializer();
 
-// Se estiver rodando localmente pelo Mock Test Tool ou Debug do VS
-if (Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API") == null)
+if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API")))
 {
-    // Execução local para depuração
+    // Execução local para testes/debug
     await host.RunAsync();
 }
 else
 {
-    // Execução real no ambiente AWS Lambda
-    await LambdaBootstrapBuilder.Create<SQSEvent>(handler.FunctionHandlerAsync, serializer)
+    // Execução na AWS Lambda (Custom Runtime AL2023 ARM64)
+    await LambdaBootstrapBuilder
+        .Create<SQSEvent>(handler.FunctionHandlerAsync, serializer)
         .Build()
         .RunAsync();
 }
