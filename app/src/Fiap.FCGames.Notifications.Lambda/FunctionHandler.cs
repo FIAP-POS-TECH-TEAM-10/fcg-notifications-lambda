@@ -79,25 +79,62 @@ namespace Fiap.FCGames.Notifications.Lambda
             using (_logger.BeginScope(new Dictionary<string, object> { ["MessageId"] = message.MessageId }))
             {
                 var body = message.Body;
+                string? eventType = null;
 
-                // Trata caso a mensagem tenha passado por SNS sem raw message delivery (envelope SNS)
+                if (message.MessageAttributes != null && message.MessageAttributes.TryGetValue("EventType", out var eventTypeAttr))
+                {
+                    eventType = eventTypeAttr.StringValue;
+                }
+
+                // Trata caso a mensagem venha empacotada em envelope:
+                // 1. Envelope SNS padrão ("Message" e "Type": "Notification")
+                // 2. Envelope MassTransit ("message" e "messageType")
                 try
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
-                    if (doc.RootElement.TryGetProperty("Message", out var snsMessage) && doc.RootElement.TryGetProperty("Type", out var snsType) && snsType.GetString() == "Notification")
+                    var root = doc.RootElement;
+
+                    // Envelope SNS
+                    if (root.TryGetProperty("Message", out var snsMessage) &&
+                        root.TryGetProperty("Type", out var snsType) &&
+                        snsType.GetString() == "Notification")
                     {
                         body = snsMessage.GetString() ?? body;
+                    }
+
+                    // Re-parseia caso o SNS envolva um envelope MassTransit dentro
+                    using var innerDoc = System.Text.Json.JsonDocument.Parse(body);
+                    var innerRoot = innerDoc.RootElement;
+
+                    // Envelope MassTransit
+                    if (innerRoot.TryGetProperty("message", out var mtMessage))
+                    {
+                        if (string.IsNullOrWhiteSpace(eventType) &&
+                            innerRoot.TryGetProperty("messageType", out var mtTypeArray) &&
+                            mtTypeArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+                        {
+                            foreach (var item in mtTypeArray.EnumerateArray())
+                            {
+                                var typeStr = item.GetString();
+                                if (typeStr != null && typeStr.Contains(nameof(UsuarioCriadoEvento), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    eventType = nameof(UsuarioCriadoEvento);
+                                    break;
+                                }
+                                if (typeStr != null && typeStr.Contains(nameof(PagamentoProcessadoEvento), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    eventType = nameof(PagamentoProcessadoEvento);
+                                    break;
+                                }
+                            }
+                        }
+
+                        body = mtMessage.GetRawText();
                     }
                 }
                 catch
                 {
-                    // Não é envelope SNS, prossegue com o body original
-                }
-
-                string? eventType = null;
-                if (message.MessageAttributes != null && message.MessageAttributes.TryGetValue("EventType", out var eventTypeAttr))
-                {
-                    eventType = eventTypeAttr.StringValue;
+                    // Não é JSON ou não é envelope, prossegue com o body atual
                 }
 
                 // Fallback: se não veio MessageAttribute, tenta inferir pelos campos do JSON
