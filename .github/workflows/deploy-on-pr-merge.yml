@@ -39,6 +39,11 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}          
 
       - name: Build & Package Lambda (.NET 10 ARM64)
+        env:
+          # nuget.config lê essa env var (%NUGET_AUTH_TOKEN%) pra autenticar no feed
+          # privado do GitHub Packages (FCGames.IntegrationEvents) — sem ela o restore
+          # cai pra anônimo e recebe 401 do nuget.pkg.github.com.
+          NUGET_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES || secrets.GITHUB_TOKEN }}
         run: |
           dotnet publish ./app/src/Fiap.FCGames.Notifications.Lambda/Fiap.FCGames.Notifications.Lambda.csproj \
             -c Release \
@@ -46,14 +51,14 @@ jobs:
             --self-contained true \
             -p:PublishSingleFile=true \
             -o ./infra/publish
-          
+
           cd ./infra/publish
-          
+
           # Se o executável não se chamar bootstrap, renomeia/copia
           if [ -f "Fiap.FCGames.Notifications.Lambda" ]; then
             cp Fiap.FCGames.Notifications.Lambda bootstrap
-          fi          
-          
+          fi
+
           chmod +x bootstrap
           zip -r ../bootstrap.zip .
         working-directory: .
